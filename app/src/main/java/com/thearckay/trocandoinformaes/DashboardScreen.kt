@@ -23,7 +23,7 @@ import com.thearckay.trocandoinformaes.api.DashboardData
 import com.thearckay.trocandoinformaes.api.RetrofitHelper
 
 @Composable
-fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick: () -> Unit) {
+fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick: (Boolean) -> Unit) {
     var dashboardData by remember { mutableStateOf<DashboardData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -34,7 +34,6 @@ fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick
                 dashboardData = response.body()?.data
             }
         } catch (e: Exception) {
-            // Tratar erro
         } finally {
             isLoading = false
         }
@@ -55,21 +54,9 @@ fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { onStockItemClick() },
+                    onClick = { onStockItemClick(false) },
                     icon = { Icon(Icons.Default.Inventory, contentDescription = "Estoque") },
                     label = { Text("Estoque") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { },
-                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Pedidos") },
-                    label = { Text("Pedidos") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Ajustes") },
-                    label = { Text("Ajustes") }
                 )
             }
         }
@@ -114,11 +101,8 @@ fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick
                         )
                     }
                     Row {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { onStockItemClick(true) }) {
                             Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color(0xFF64748B))
-                        }
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Notificações", tint = Color(0xFF64748B))
                         }
                     }
                 }
@@ -212,7 +196,7 @@ fun DashboardScreen(userId: Int, onAddNewItemClick: () -> Unit, onStockItemClick
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF64748B)
                     )
-                    TextButton(onClick = { }) {
+                    TextButton(onClick = { onStockItemClick(false) }) {
                         Text("Ver Tudo", fontSize = 13.sp, color = Color(0xFF1A56DB), fontWeight = FontWeight.Bold)
                     }
                 }

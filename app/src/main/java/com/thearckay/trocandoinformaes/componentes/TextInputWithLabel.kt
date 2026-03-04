@@ -31,6 +31,7 @@ fun TextInputWithLabel(
             value = value,
             onValueChange = onValueChange,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            singleLine = true,
             placeholder = {
                 if (placeholder.isNotEmpty()) {
                     Text(text = placeholder)

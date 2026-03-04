@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,11 +26,18 @@ import com.thearckay.trocandoinformaes.api.StockItem
 import kotlinx.coroutines.launch
 
 @Composable
-fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) {
+fun StockScreen(
+    userId: Int, 
+    focusSearch: Boolean = false, 
+    onBack: () -> Unit, 
+    onAddNewItemClick: () -> Unit,
+    onItemClick: (StockItem) -> Unit // Novo parâmetro
+) {
     var stockItems by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
 
     fun fetchItems() {
         scope.launch {
@@ -38,16 +47,17 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
                     stockItems = response.body()?.data ?: emptyList()
                 }
             } catch (e: Exception) {
-                // Erro de conexão
             } finally {
                 isLoading = false
             }
         }
     }
 
-    // Atualiza os dados sempre que o usuário volta para esta tela
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         fetchItems()
+        if (focusSearch) {
+            focusRequester.requestFocus()
+        }
     }
 
     Scaffold(
@@ -58,7 +68,6 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(Color(0xFFF8FAFC)).padding(16.dp)) {
-            // Header com Botão Voltar
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
@@ -71,11 +80,10 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de Busca funcional
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 placeholder = { Text("Buscar itens no estoque...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
@@ -87,7 +95,6 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
                     CircularProgressIndicator()
                 }
             } else {
-                // Filtro de busca local para performance
                 val filteredItems = stockItems.filter { 
                     it.name.contains(searchQuery, ignoreCase = true) || 
                     it.itemCode.contains(searchQuery, ignoreCase = true) 
@@ -95,7 +102,7 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
 
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(filteredItems) { item ->
-                        StockItemCard(item)
+                        StockItemCard(item = item, onClick = { onItemClick(item) }) // Passa o clique
                     }
                 }
             }
@@ -104,8 +111,14 @@ fun StockScreen(userId: Int, onBack: () -> Unit, onAddNewItemClick: () -> Unit) 
 }
 
 @Composable
-fun StockItemCard(item: StockItem) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = CardDefaults.outlinedCardBorder()) {
+fun StockItemCard(item: StockItem, onClick: () -> Unit) { // Adicionado onClick
+    Card(
+        onClick = onClick, // Tornando o card clicável
+        modifier = Modifier.fillMaxWidth(), 
+        shape = RoundedCornerShape(12.dp), 
+        colors = CardDefaults.cardColors(containerColor = Color.White), 
+        border = CardDefaults.outlinedCardBorder()
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(60.dp), color = Color(0xFFF1F5F9), shape = RoundedCornerShape(8.dp)) {
                 Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.padding(16.dp), tint = Color.Gray)
@@ -129,5 +142,5 @@ fun StockItemCard(item: StockItem) {
 @Preview(showBackground = true)
 @Composable
 fun StockScreenPreview(){
-    StockScreen(userId = 0, onBack = {}, onAddNewItemClick = {})
+    StockScreen(userId = 0, onBack = {}, onAddNewItemClick = {}, onItemClick = {})
 }

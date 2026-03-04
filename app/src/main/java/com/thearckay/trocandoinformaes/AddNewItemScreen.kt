@@ -15,8 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +30,25 @@ import com.thearckay.trocandoinformaes.api.ItemRequest
 import com.thearckay.trocandoinformaes.api.RetrofitHelper
 import com.thearckay.trocandoinformaes.componentes.TextInputWithLabel
 import kotlinx.coroutines.launch
-import kotlin.random.Random
+import java.text.NumberFormat
+import java.util.Locale
+
+class CurrencyVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val cleanText = text.text.replace(Regex("[^\\d]"), "")
+        if (cleanText.isEmpty()) {
+            return TransformedText(AnnotatedString(""), OffsetMapping.Identity)
+        }
+        
+        val parsed = cleanText.toDoubleOrNull() ?: 0.0
+        val formatted = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(parsed / 100)
+        
+        return TransformedText(AnnotatedString(formatted), object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int = formatted.length
+            override fun transformedToOriginal(offset: Int): Int = cleanText.length
+        })
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +58,9 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
         val letter = ('A'..'Z').random()
         return "AMGE-$numbers-$letter"
     }
+
+    val categories = listOf("Hidráulico", "Mecânico", "Elétrico", "Ferramentas", "Acessórios", "Outros")
+    var expanded by remember { mutableStateOf(false) }
 
     var itemName by remember { mutableStateOf("") }
     var itemCode by remember { mutableStateOf(generateItemCode()) }
@@ -73,17 +98,18 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
                 } else {
                     Button(
                         onClick = {
-                            if (itemName.isEmpty() || price.isEmpty()) {
-                                Toast.makeText(context, "Preencha os campos obrigatórios", Toast.LENGTH_SHORT).show()
+                            if (itemName.isEmpty() || price.isEmpty() || category.isEmpty()) {
+                                Toast.makeText(context, "Preencha todos os campos obrigatórios", Toast.LENGTH_SHORT).show()
                             } else {
                                 isLoading = true
                                 scope.launch {
                                     try {
+                                        val cleanPrice = price.replace(Regex("[^\\d]"), "").toDoubleOrNull() ?: 0.0
                                         val request = ItemRequest(
                                             name = itemName,
                                             itemCode = itemCode,
                                             quantity = quantity,
-                                            price = price.toDoubleOrNull() ?: 0.0,
+                                            price = cleanPrice / 100,
                                             type = "ADD"
                                         )
                                         val response = RetrofitHelper.authService.registerItem(userId, request)
@@ -162,12 +188,6 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
                         Icon(Icons.Default.Refresh, contentDescription = "Gerar")
                     }
                 }
-                Text(
-                    text = "Identificador único gerado automaticamente",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
 
             Column {
@@ -178,14 +198,40 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
                     color = Color(0xFF1E293B),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                OutlinedTextField(
-                    value = category,
-                    onValueChange = { category = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Selecione uma categoria") },
-                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, contentDescription = null) },
-                    shape = RoundedCornerShape(12.dp)
-                )
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        placeholder = { Text("Selecione uma categoria") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categories.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption) },
+                                onClick = {
+                                    category = selectionOption
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             Card(
@@ -212,42 +258,18 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Quantidade Inicial",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = "Estoque inicial do produto",
-                            fontSize = 11.sp,
-                            color = Color.Gray
-                        )
+                        Text("Quantidade Inicial", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Estoque inicial", fontSize = 11.sp, color = Color.Gray)
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .background(Color(0xFFF1F5F9), RoundedCornerShape(24.dp))
-                            .padding(4.dp)
+                        modifier = Modifier.background(Color(0xFFF1F5F9), RoundedCornerShape(24.dp)).padding(4.dp)
                     ) {
-                        IconButton(
-                            onClick = { if (quantity > 0) quantity-- },
-                            modifier = Modifier.size(32.dp)
-                        ) {
+                        IconButton(onClick = { if (quantity > 0) quantity-- }, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Remove, contentDescription = "Diminuir")
                         }
-                        Text(
-                            text = quantity.toString(),
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(
-                            onClick = { quantity++ },
-                            modifier = Modifier.size(32.dp),
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = Color(0xFF1A56DB),
-                                contentColor = Color.White
-                            )
-                        ) {
+                        Text(text = quantity.toString(), modifier = Modifier.padding(horizontal = 8.dp), fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { quantity++ }, modifier = Modifier.size(32.dp), colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1A56DB), contentColor = Color.White)) {
                             Icon(Icons.Default.Add, contentDescription = "Aumentar")
                         }
                     }
@@ -255,21 +277,18 @@ fun AddNewItemScreen(userId: Int, onBack: () -> Unit) {
             }
 
             Column {
-                Text(
-                    text = "Preço Unitário",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E293B),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                Text("Preço Unitário", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), modifier = Modifier.padding(bottom = 8.dp))
                 OutlinedTextField(
                     value = price,
-                    onValueChange = { price = it },
+                    onValueChange = { input ->
+                        if (input.all { it.isDigit() }) price = input
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("0.00") },
+                    placeholder = { Text("R$ 0,00") },
                     leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.Gray) },
-                    trailingIcon = { Text("BRL", color = Color.Gray, modifier = Modifier.padding(end = 12.dp)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    visualTransformation = CurrencyVisualTransformation(),
+                    singleLine = true,
                     shape = RoundedCornerShape(12.dp)
                 )
             }
