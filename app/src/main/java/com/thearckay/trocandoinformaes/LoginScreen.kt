@@ -1,20 +1,9 @@
 package com.thearckay.trocandoinformaes
 
-import android.graphics.drawable.Icon
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,155 +11,130 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Shapes
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.gson.Gson
+import com.thearckay.trocandoinformaes.api.ApiResponse
+import com.thearckay.trocandoinformaes.api.LoginRequest
+import com.thearckay.trocandoinformaes.api.RetrofitHelper
 import com.thearckay.trocandoinformaes.componentes.ButtonWithIcon
 import com.thearckay.trocandoinformaes.componentes.HorizontalLineWithText
 import com.thearckay.trocandoinformaes.componentes.TextInputWithLabel
+import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(goToRegisterScreen: () -> Unit){
+fun LoginScreen(onLoginSuccess: (Int) -> Unit, goToRegisterScreen: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-
-                IconButton(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.align(Alignment.CenterStart)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Voltar"
-                    )
-                }
-
-                Text(
-                    text = "AMGE",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight(700),
-                    modifier = Modifier.align(Alignment.Center)
-                )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "AMGE", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
             }
-
         }
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = Color(0xFFadc9de),
-                )
-                .height(150.dp),
+            modifier = Modifier.fillMaxWidth().background(Color(0xFFadc9de)).height(150.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painterResource(R.drawable.login_icon),
-                contentDescription = "Logo",
-                modifier = Modifier.size(200.dp)
-            )
+            Image(painter = painterResource(R.drawable.login_icon), contentDescription = "Logo", modifier = Modifier.size(200.dp))
         }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp,10.dp,0.dp,0.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
 
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Entrar",
-                fontSize = 30.sp,
-                fontWeight = FontWeight(750)
-            )
+            Text(text = "Entrar", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+            
             TextInputWithLabel(
                 label = "E-mail",
-                modifier = Modifier.fillMaxWidth().padding(10.dp,10.dp,10.dp,0.dp),
-                onValueChange = {
-
-                },
-                value = "",
-                placeholder = "seu@email.com"
+                value = email,
+                onValueChange = { email = it },
+                placeholder = "seu@email.com",
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp)
             )
+            
             TextInputWithLabel(
                 label = "Senha",
-                modifier = Modifier.fillMaxWidth().padding(10.dp,10.dp,10.dp,0.dp),
-                onValueChange = {
-
-                },
-                value = "",
-                placeholder = "Mínimo 8 caracteres"
+                value = password,
+                onValueChange = { password = it },
+                placeholder = "Mínimo 8 caracteres",
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp)
             )
         }
+
         Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        } else {
             ButtonWithIcon(
-                onClick = {},
+                onClick = {
+                    if (email.isEmpty() || password.isEmpty()) {
+                        Toast.makeText(context, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
+                    } else {
+                        isLoading = true
+                        scope.launch {
+                            try {
+                                val response = RetrofitHelper.authService.login(LoginRequest(email, password))
+                                
+                                if (response.isSuccessful) {
+                                    val userId = response.body()?.data ?: -1
+                                    Toast.makeText(context, response.body()?.message ?: "Sucesso!", Toast.LENGTH_SHORT).show()
+                                    onLoginSuccess(userId)
+                                } else {
+                                    val errorBody = response.errorBody()?.string()
+                                    val errorResponse = Gson().fromJson(errorBody, ApiResponse::class.java)
+                                    Toast.makeText(context, errorResponse?.message ?: "Erro no login", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Erro de conexão", Toast.LENGTH_LONG).show()
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    }
+                },
                 text = "Entrar",
-                colors = ButtonColors(
-                    containerColor = Color.Blue,
-                    contentColor = Color.White,
-                    disabledContentColor = Color.Blue,
-                    disabledContainerColor = Color.Blue
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
                 icon = Icons.Default.ExitToApp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp,10.dp,10.dp,0.dp)
-                    .height(55.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(55.dp),
                 shape = RoundedCornerShape(12.dp)
             )
         }
-        HorizontalLineWithText(
-            modifier = Modifier.padding(top = 80.dp),
-            text = "Ou"
-        )
+
+        HorizontalLineWithText(modifier = Modifier.padding(top = 40.dp), text = "Ou")
+
         ButtonWithIcon(
             onClick = { goToRegisterScreen() },
             text = "Criar conta",
-            colors = ButtonColors(
-                containerColor = Color.Blue,
-                contentColor = Color.White,
-                disabledContentColor = Color.Blue,
-                disabledContainerColor = Color.Blue
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
             icon = Icons.Default.AccountCircle,
-            modifier = Modifier.padding(top = 80.dp)
-                .fillMaxWidth()
-                .padding(10.dp,10.dp,10.dp,0.dp)
-                .height(55.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(55.dp),
             shape = RoundedCornerShape(12.dp)
         )
+
         Text(
             text = "Developed by Kayck Arcanjo",
             textAlign = TextAlign.Center,
@@ -180,8 +144,8 @@ fun LoginScreen(goToRegisterScreen: () -> Unit){
     }
 }
 
-@Preview(showBackground = true, name = "Login")
+@Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview(){
-    LoginScreen(goToRegisterScreen = {})
+fun LoginScreenPreview() {
+    LoginScreen(onLoginSuccess = {}, goToRegisterScreen = {})
 }
