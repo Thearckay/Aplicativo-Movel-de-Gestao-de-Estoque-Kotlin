@@ -1,82 +1,95 @@
-# AMGE -  Aplicativo Móvel de Gestão de Estoque
+# AMGE Mobile
 
-## Descrição do Projeto
+Frontend mobile do projeto **AMGE (Aplicativo Móvel de Gestão de Estoque)** desenvolvido como parte do projeto de imersão profissional da faculdade.
 
-O **Armazém AMGE** é uma aplicação completa (Full Stack) desenvolvida para a gestão de estoques e fluxos de armazém.
-
-O sistema permite o controle de entrada de itens, monitoramento de valores totais de inventário e visualização de atividades recentes, garantindo que o operador tenha controle total sobre os produtos sob sua responsabilidade.
+O aplicativo foi construído utilizando **Kotlin** e **Jetpack Compose**, consumindo uma **API RESTful** desenvolvida em Spring Boot. A aplicação se comunica com o backend para realizar operações de consulta e envio de dados relacionados ao estoque.
 
 ---
 
-## Tecnologias Utilizadas
-
-### Backend
-
-- **Java 17+**
-- **Spring Boot 3.x**
-- **Spring Data JPA** – Persistência de dados e abstração de consultas
-- **MySQL** – Banco de dados relacional
-- **Jakarta Persistence (JPA)** – Mapeamento Objeto-Relacional (ORM)
-- **Maven** – Gerenciamento de dependências
-
-### Frontend (Mobile)
+## 📱 Tecnologias Utilizadas
 
 - **Kotlin**
-- **Jetpack Compose** – Interface declarativa moderna
-- **Retrofit 2** – Comunicação assíncrona com API REST
-- **Coroutines** – Execução de tarefas em segundo plano
-- **GSON** – Conversão de JSON para objetos Kotlin
+- **Jetpack Compose**
+- **Retrofit 2**
+- **Gson Converter**
+- **Kotlin Coroutines**
+- **Gradle (Kotlin DSL)**
 
 ---
 
-## Arquitetura do Sistema
+## 🧱 Arquitetura da Aplicação
 
-O projeto foi estruturado seguindo boas práticas de separação de responsabilidades:
+A aplicação foi construída utilizando componentes modernos do ecossistema Android, priorizando simplicidade, organização e boas práticas.
 
-1. **Camada de Entidade**
-    - Mapeamento das tabelas `User` e `Item`
-    - Relacionamento `ManyToOne`
+### Interface de Usuário
 
-2. **Camada de Repositório**
-    - Interfaces que estendem `JpaRepository`
-    - Responsável pelo acesso ao banco de dados
+A interface foi desenvolvida utilizando **Jetpack Compose**, adotando o modelo declarativo para criação das telas.
 
-3. **Camada de Serviço (Service Layer)**
-    - Implementação das regras de negócio
-    - Validações (ex: verificação de código duplicado)
-    - Cálculos relacionados ao inventário
+Isso permite:
 
-4. **Camada de Controle (REST Controllers)**
-    - Exposição dos endpoints
-    - Uso de **DTOs (Data Transfer Objects)** para segurança e organização
-
-5. **Tratamento Global de Exceções**
-    - Implementação com `@RestControllerAdvice`
-    - Respostas padronizadas para o frontend mesmo em cenários de erro
+- Criação de interfaces reativas
+- Menos código boilerplate
+- Atualização automática da UI quando o estado muda
 
 ---
 
-## Funcionalidades Principais
+### Gerenciamento de Estado
 
-- **Autenticação de Usuário**
-    - Registro
-    - Login
-    - Retorno de ID de sessão para persistência no mobile
+O estado das telas é gerenciado utilizando:
 
-- **Dashboard Dinâmico**
-    - Cálculo em tempo real do valor total do inventário
-    - Percentual de variação
+- `remember`
+- `mutableStateOf`
 
-- **Gestão de Itens**
-    - Cadastro de produtos vinculados ao usuário logado
-    - Validação de código único (SKU)
-
-- **Consulta de Estoque**
-    - Listagem completa de itens por usuário
-    - Otimização de tráfego de rede
+Esses recursos garantem que a interface reflita automaticamente as mudanças nos dados retornados pela API.
 
 ---
 
-## Autor
+### Concorrência e Chamadas Assíncronas
 
-Kayck Arcanjo
+Para evitar bloqueio da **Main Thread**, as chamadas de rede são executadas utilizando:
+
+- **Kotlin Coroutines**
+- `suspend functions`
+- `rememberCoroutineScope`
+
+Isso permite que requisições HTTP sejam feitas de forma assíncrona, mantendo a interface responsiva.
+
+---
+
+## 🌐 Comunicação com a API
+
+A comunicação com o backend é feita através do **Retrofit 2**, configurado como um **Singleton** responsável por gerenciar todas as requisições HTTP.
+
+### Cliente HTTP
+
+- **Retrofit 2**
+- Base URL apontando para o backend Spring Boot
+- Integração com Coroutines
+
+---
+
+### Conversão de Dados
+
+A conversão entre JSON e objetos Kotlin é realizada automaticamente utilizando:
+
+- **Gson Converter**
+
+Os dados retornados pela API são mapeados para **data classes Kotlin**, facilitando a manipulação dentro da aplicação.
+
+---
+
+### Interface de Serviços
+
+Os endpoints da API são definidos através de uma **interface de serviço**, contendo:
+
+- Endpoints `GET`
+- Endpoints `POST`
+
+---
+
+### Padronização de Respostas
+
+A aplicação utiliza um modelo genérico de resposta:
+
+```kotlin
+ApiResponse<T>
