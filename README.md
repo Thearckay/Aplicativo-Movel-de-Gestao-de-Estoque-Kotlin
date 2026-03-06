@@ -6,7 +6,7 @@ O aplicativo foi construído utilizando **Kotlin** e **Jetpack Compose**, consum
 
 ---
 
-## 📱 Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - **Kotlin**
 - **Jetpack Compose**
@@ -17,7 +17,7 @@ O aplicativo foi construído utilizando **Kotlin** e **Jetpack Compose**, consum
 
 ---
 
-## 🧱 Arquitetura da Aplicação
+## Arquitetura da Aplicação
 
 A aplicação foi construída utilizando componentes modernos do ecossistema Android, priorizando simplicidade, organização e boas práticas.
 
@@ -56,7 +56,7 @@ Isso permite que requisições HTTP sejam feitas de forma assíncrona, mantendo 
 
 ---
 
-## 🌐 Comunicação com a API
+## Comunicação com a API
 
 A comunicação com o backend é feita através do **Retrofit 2**, configurado como um **Singleton** responsável por gerenciar todas as requisições HTTP.
 
